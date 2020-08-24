@@ -582,7 +582,7 @@ def biLSTM_Train_Test(x_train, x_test, x_val,
     history = model.fit(x_train, y_train,
                         batch_size=BATCH_SIZE,
                         epochs=num_epochs,
-                        validation_data=[x_val, y_val], 
+                        validation_data=(x_val, y_val), 
                         callbacks=[early_stopping_monitor], 
                         verbose=False)
     # plot_train_res(history)
