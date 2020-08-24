@@ -100,6 +100,7 @@ def main_analysis(data_path,
 
     eval_models_df_1, eval_models_df_drop,         feature_score_1, feature_score_drop = train_1_and_drop(data_scaled_clean=data_scaled_clean,
                                                          target_clean=target_clean,
+                                                         cell_line=cell_line,
                                                          eval_models_df=eval_models_df, 
                                                          sequenc_len_list =  sequenc_len_list,
                                                          num_lstm_units = num_lstm_units,
@@ -785,7 +786,7 @@ def get_full_model_experiments(data,
 
 
 def get_means_featured(data, eval_models_df, num_experements, 
-                       num_folds, data_csv, do_save=True):
+                       num_folds, data_csv='.csv', do_save=True):
     # Set feature names
     features = np.hstack([data.columns, ['all']])
     print(eval_models_df, num_experements * num_folds, 
@@ -808,15 +809,15 @@ def get_means_featured(data, eval_models_df, num_experements,
     
     if do_save:
         print(data_csv)
-        eval_models_df.to_csv("../experiments/eval" + data_csv)
-        data.to_csv("../experiments/data" + data_csv)
-        eval_models_df_means.to_csv("../experiments/exp_means" + data_csv)
-        eval_models_df_std.to_csv("../experiments/exp_stds" + data_csv)
+        eval_models_df.to_csv("../models/experiments/eval" + data_csv)
+        data.to_csv("../models/experiments/data" + data_csv)
+        eval_models_df_means.to_csv("../models/experiments/exp_means" + data_csv)
+        eval_models_df_std.to_csv("../models/experiments/exp_stds" + data_csv)
         
     return eval_models_df_means, eval_models_df_std, eval_models_df
 
 
-def plot_exps_together(eval_models_df_means, eval_models_df_std):
+def plot_exps_together(eval_models_df_means, eval_models_df_std, num_experements, cell_line):
     exps_grid = np.arange(eval_models_df_means.shape[0])
     fig, ax0 = plt.subplots(nrows=1, figsize=(16, 10))
 
@@ -861,6 +862,8 @@ def plot_exps_together(eval_models_df_means, eval_models_df_std):
     
 def plot_exps_drops(eval_models_df_means, 
                     eval_models_df_std,
+                    num_experements,
+                    cell_line,
                     value_name = 'weighted_mse_train'):
     exps_grid = np.arange(eval_models_df_means.shape[0])
     fig, ax0 = plt.subplots(nrows=1, figsize=(16, 10))
@@ -907,7 +910,8 @@ def run_exps_use_1_features(data,
                             batch_size,
                             min_delta,
                             patience,
-                            random_state): 
+                            random_state,
+                            save_csv_path = "../models/experiments/exps_1_feature.csv"): 
     for out_feat_indx in range(data.shape[1]):
             K.clear_session()
             data_out1 = data[[data.columns[out_feat_indx]]].copy() 
@@ -929,7 +933,7 @@ def run_exps_use_1_features(data,
                 patience = patience,
                 random_state = random_state)
 
-            eval_models_df.to_csv("../experiments/exps_1_feature" + data_csv)
+            eval_models_df.to_csv(save_csv_path)
             if out_feat_indx == data.shape[1]-1:    
                 print('\n-----\n KEEP FEATURES -- ' + str(out_feat_indx) + '\n-----\n')
                 # Use all features
@@ -961,7 +965,8 @@ def run_exps_drop_1_features(data,
                             min_delta,
                             patience,
                             num_folds, 
-                            random_state): 
+                            random_state,
+                            save_csv_path = "../models/experiments/exps_drop_1.csv"): 
     for out_feat_indx in range(data.shape[1]):
             K.clear_session()
             data_out1 = data.copy()
@@ -984,7 +989,7 @@ def run_exps_drop_1_features(data,
                 patience = patience,
                 num_folds = num_folds, 
                 random_state = random_state)
-            eval_models_df.to_csv("../experiments/exps_drop_1_" + data_csv)
+            eval_models_df.to_csv(save_csv_path)
 
             if out_feat_indx == data.shape[1]-1:    
                 print('\n-----\n KEEP FEATURES -- ' + str(out_feat_indx) + '\n-----\n')
@@ -1005,6 +1010,7 @@ def run_exps_drop_1_features(data,
 
 def train_1_and_drop(data_scaled_clean,
                      target_clean,
+                     cell_line,
                      eval_models_df, 
                      sequenc_len_list,
                      num_lstm_units,
@@ -1012,9 +1018,9 @@ def train_1_and_drop(data_scaled_clean,
                      num_experements,
                      file_path, 
                      batch_size,
+                     num_folds, 
                      min_delta,
                      patience,
-                     num_folds, 
                      random_state,
                      do_only_1_feature_exps = True,
                      do_drop_1_feature_exps = True):
@@ -1032,6 +1038,9 @@ def train_1_and_drop(data_scaled_clean,
                                                  eval_models_df=eval_models_df_1, 
                                                  sequenc_len_list =  sequenc_len_list,
                                                  num_lstm_units = num_lstm_units,
+                                                 num_folds = num_folds,
+                                                 min_delta = min_delta,
+                                                 patience = patience,
                                                  n_epochs_max = n_epochs_max, 
                                                  num_experements = num_experements,
                                                  file_path = file_path, 
@@ -1043,11 +1052,12 @@ def train_1_and_drop(data_scaled_clean,
                                                                                       eval_models_df_1, 
                                                                                       num_experements,
                                                                                       num_folds, 
-                                                                                      data_csv, 
                                                                                       do_save=True)
-        plot_exps_together(eval_models_df_means, eval_models_df_std)
-        plot_exps_drops(eval_models_df_means, eval_models_df_std, value_name = 'weighted_mse_train')
-        plot_exps_drops(eval_models_df_means, eval_models_df_std, value_name = 'weighted_mse_test')
+        plot_exps_together(eval_models_df_means, eval_models_df_std, num_experements, cell_line)
+        plot_exps_drops(eval_models_df_means, eval_models_df_std, 
+                        num_experements, cell_line, value_name = 'weighted_mse_train')
+        plot_exps_drops(eval_models_df_means, eval_models_df_std, 
+                        num_experements, cell_line, value_name = 'weighted_mse_test')
         
 
         value_name = 'weighted_mse_test'
@@ -1075,7 +1085,9 @@ def train_1_and_drop(data_scaled_clean,
                                                  num_lstm_units = num_lstm_units,
                                                  n_epochs_max = n_epochs_max, 
                                                  num_experements = num_experements,
-                                                num_folds=num_folds,
+                                                 num_folds = num_folds,
+                                                 min_delta = min_delta,
+                                                 patience = patience,
                                                  file_path = file_path, 
                                                  missing_feature = -1, # missing_feature,
                                                  batch_size = batch_size,
@@ -1085,11 +1097,12 @@ def train_1_and_drop(data_scaled_clean,
                                                                                       eval_models_df_drop, 
                                                                                       num_experements,
                                                                                       num_folds, 
-                                                                                      data_csv, 
                                                                                       do_save=True)
-        plot_exps_together(eval_models_df_means, eval_models_df_std)
-        plot_exps_drops(eval_models_df_means, eval_models_df_std, value_name = 'weighted_mse_train')
-        plot_exps_drops(eval_models_df_means, eval_models_df_std, value_name = 'weighted_mse_test')
+        plot_exps_together(eval_models_df_means, eval_models_df_std, num_experements, cell_line)
+        plot_exps_drops(eval_models_df_means, eval_models_df_std, 
+                        num_experements, cell_line, value_name = 'weighted_mse_train')
+        plot_exps_drops(eval_models_df_means, eval_models_df_std, 
+                        num_experements, cell_line, value_name = 'weighted_mse_test')
 
         value_name = 'weighted_mse_test'
         means = np.sort(eval_models_df_means[value_name])
