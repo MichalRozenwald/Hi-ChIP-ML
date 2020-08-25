@@ -1,4 +1,4 @@
-# Hi-ChIP-ML - a machine learning framework for the1prediction of chromatin folding in ***Drosophila* ** using epigenetic features
+# Hi-ChIP-ML - a machine learning framework for the1prediction of chromatin folding in ***Drosophila*** using epigenetic features
 
 Michal B. Rozenwald^1, Aleksandra A. Galitsyna^2, Grigory V. Sapunov^{1,4}, Ekaterina E. Khrameeva^2, and Mikhail S. Gelfand^{2,3}
 
